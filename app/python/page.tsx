@@ -1,24 +1,102 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { CodeEditor } from '../components/CodeEditor';
 import ExecutionResult from '../components/ExecutionResult';
+
+// Tipo para Pyodide
+declare global {
+  interface Window {
+    pyodide: any;
+  }
+}
 
 export default function PythonEditor() {
   const [code, setCode] = useState("# Escribe tu código Python aquí\nprint('¡Hola, mundo!')");
   const [result, setResult] = useState('');
   const [isError, setIsError] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isPyodideReady, setIsPyodideReady] = useState(false);
+  
+  // Cargar Pyodide cuando el componente se monta
+  useEffect(() => {
+    async function loadPyodide() {
+      try {
+        setIsLoading(true);
+        
+        // Solo cargamos el script si aún no está cargado
+        if (!window.pyodide) {
+          const script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/pyodide/v0.27.4/full/pyodide.js';
+          script.async = true;
+          script.onload = initializePyodide;
+          document.body.appendChild(script);
+        } else {
+          setIsPyodideReady(true);
+          setIsLoading(false);
+        }
+      } catch (error) {
+        console.error('Error al cargar Pyodide:', error);
+        setIsLoading(false);
+      }
+    }
+    
+    async function initializePyodide() {
+      try {
+        window.pyodide = await (window as any).loadPyodide();
+        setIsPyodideReady(true);
+      } catch (error) {
+        console.error('Error al inicializar Pyodide:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    
+    loadPyodide();
+    
+    // Limpieza al desmontar
+    return () => {
+      // No podemos "descargar" Pyodide, pero podemos eliminar el estado
+    };
+  }, []);
   
   const handleCodeChange = (value: string | undefined) => {
     setCode(value || '');
   };
   
-  const handleExecute = () => {
-    // Esta función será implementada más adelante para ejecutar el código
-    // Por ahora, solo mostraremos un mensaje
-    setResult('La ejecución de código será implementada próximamente.');
-    setIsError(false);
-  };
+  const handleExecute = useCallback(async () => {
+    if (!isPyodideReady) {
+      setResult('Pyodide aún se está cargando. Por favor, espera un momento...');
+      setIsError(true);
+      return;
+    }
+    
+    try {
+      setIsLoading(true);
+      
+      // Redireccionar stdout a una variable
+      window.pyodide.runPython(`
+        import sys
+        from io import StringIO
+        sys.stdout = StringIO()
+      `);
+      
+      // Ejecutar el código del usuario
+      window.pyodide.runPython(code);
+      
+      // Obtener el contenido de stdout
+      const output = window.pyodide.runPython(`sys.stdout.getvalue()`);
+      
+      setResult(output);
+      setIsError(false);
+    } catch (error: any) {
+      console.error('Error al ejecutar código Python:', error);
+      setResult(`Error: ${error.message}`);
+      setIsError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [code, isPyodideReady]);
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -34,9 +112,14 @@ export default function PythonEditor() {
       <div className="mb-6">
         <button
           onClick={handleExecute}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors"
+          disabled={isLoading || !isPyodideReady}
+          className={`px-4 py-2 text-white font-medium rounded-md transition-colors ${
+            isLoading || !isPyodideReady
+              ? 'bg-blue-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700'
+          }`}
         >
-          Ejecutar código
+          {isLoading ? 'Ejecutando...' : !isPyodideReady ? 'Cargando Pyodide...' : 'Ejecutar código'}
         </button>
       </div>
       

@@ -7,8 +7,15 @@ import ExecutionResult from '../components/ExecutionResult';
 // Tipo para Pyodide
 declare global {
   interface Window {
-    pyodide: any;
+    pyodide: PyodideInterface;
+    loadPyodide: () => Promise<PyodideInterface>;
   }
+}
+
+// Definición de la interfaz de Pyodide
+interface PyodideInterface {
+  runPython: (code: string) => unknown;
+  // Agregar otros métodos y propiedades según sea necesario
 }
 
 export default function PythonEditor() {
@@ -43,9 +50,9 @@ export default function PythonEditor() {
     
     async function initializePyodide() {
       try {
-        window.pyodide = await (window as any).loadPyodide();
+        window.pyodide = await window.loadPyodide();
         setIsPyodideReady(true);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('Error al inicializar Pyodide:', error);
       } finally {
         setIsLoading(false);
@@ -87,11 +94,13 @@ export default function PythonEditor() {
       // Obtener el contenido de stdout
       const output = window.pyodide.runPython(`sys.stdout.getvalue()`);
       
-      setResult(output);
+      // Convertir output (unknown) a string para asignarlo a setResult
+      setResult(String(output));
       setIsError(false);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al ejecutar código Python:', error);
-      setResult(`Error: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      setResult(`Error: ${errorMessage}`);
       setIsError(true);
     } finally {
       setIsLoading(false);

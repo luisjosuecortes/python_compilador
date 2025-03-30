@@ -6,14 +6,24 @@ export default function Home() {
     <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
       <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
         <div className="flex flex-col items-center gap-4 mb-8">
-          <h1 className="text-3xl font-bold mb-2">Compilador de Python</h1>
-          <p className="text-lg text-gray-600 dark:text-gray-300">Escribe, ejecuta y visualiza código Python en tu navegador</p>
-          <Link
-            href="/python"
-            className="mt-4 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors text-lg"
-          >
-            Ir al Editor de Python
-          </Link>
+          <h1 className="text-3xl font-bold mb-2">Compilador Online</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-300">Escribe, ejecuta y visualiza código en tu navegador</p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 mt-4">
+            <Link
+              href="/python"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors text-lg"
+            >
+              Editor de Python
+            </Link>
+            
+            <Link
+              href="/c"
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-md transition-colors text-lg"
+            >
+              Editor de C
+            </Link>
+          </div>
         </div>
 
         <Image
